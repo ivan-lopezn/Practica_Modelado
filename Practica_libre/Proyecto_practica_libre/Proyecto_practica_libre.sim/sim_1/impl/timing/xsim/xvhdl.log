@@ -1,0 +1,6 @@
+INFO: [VRFC 10-163] Analyzing VHDL file "C:/Modelado/Practica_Modelado/Practica_libre/Sources/display_controller_tb.vhd" into library xil_defaultlib
+INFO: [VRFC 10-3107] analyzing entity 'display_controller_tb'
+ERROR: [VRFC 10-719] formal port/generic <rst> is not declared in <display_controller> [C:/Modelado/Practica_Modelado/Practica_libre/Sources/display_controller_tb.vhd:25]
+ERROR: [VRFC 10-3353] formal port '\CLK\' has no actual or default value [C:/Modelado/Practica_Modelado/Practica_libre/Sources/display_controller_tb.vhd:23]
+ERROR: [VRFC 10-9458] unit 'sim' is ignored due to previous errors [C:/Modelado/Practica_Modelado/Practica_libre/Sources/display_controller_tb.vhd:8]
+INFO: [VRFC 10-8704] VHDL file 'C:/Modelado/Practica_Modelado/Practica_libre/Sources/display_controller_tb.vhd' is ignored due to errors

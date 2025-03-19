@@ -3,11 +3,11 @@
 # SW Build 5076996 on Wed May 22 18:37:14 MDT 2024
 # IP Build 5075265 on Wed May 22 21:45:21 MDT 2024
 # SharedData Build 5076995 on Wed May 22 18:29:18 MDT 2024
-# Start of session at: Fri Mar  7 10:54:58 2025
-# Process ID: 24328
+# Start of session at: Wed Mar 19 12:43:19 2025
+# Process ID: 1828
 # Current directory: C:/Modelado/Practica_Modelado/Practica_libre/Proyecto_practica_libre/Proyecto_practica_libre.runs/synth_1
-# Command line: vivado.exe -log display_controller.vds -product Vivado -mode batch -messageDb vivado.pb -notrace -source display_controller.tcl
-# Log file: C:/Modelado/Practica_Modelado/Practica_libre/Proyecto_practica_libre/Proyecto_practica_libre.runs/synth_1/display_controller.vds
+# Command line: vivado.exe -log test_display_controller.vds -product Vivado -mode batch -messageDb vivado.pb -notrace -source test_display_controller.tcl
+# Log file: C:/Modelado/Practica_Modelado/Practica_libre/Proyecto_practica_libre/Proyecto_practica_libre.runs/synth_1/test_display_controller.vds
 # Journal file: C:/Modelado/Practica_Modelado/Practica_libre/Proyecto_practica_libre/Proyecto_practica_libre.runs/synth_1\vivado.jou
 # Running On        :LAPTOP-I1QQ8O5Q
 # Platform          :Windows Server 2016 or Windows 10
@@ -17,8 +17,8 @@
 # CPU Physical cores:4
 # CPU Logical cores :8
 # Host memory       :8379 MB
-# Swap memory       :8379 MB
-# Total Virtual     :16758 MB
-# Available Virtual :2974 MB
+# Swap memory       :11101 MB
+# Total Virtual     :19481 MB
+# Available Virtual :2466 MB
 #-----------------------------------------------------------
-source display_controller.tcl -notrace
+source test_display_controller.tcl -notrace

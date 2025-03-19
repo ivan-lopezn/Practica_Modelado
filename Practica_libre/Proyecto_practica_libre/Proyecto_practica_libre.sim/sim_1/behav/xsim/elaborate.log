@@ -12,7 +12,7 @@ Compiling package std.standard
 Compiling package std.textio
 Compiling package ieee.std_logic_1164
 Compiling package ieee.numeric_std
-Compiling architecture rtl of entity xil_defaultlib.prescaler [\prescaler(cte_ands=1000)\]
+Compiling architecture rtl of entity xil_defaultlib.prescaler [\prescaler(cte_ands=125000)\]
 Compiling architecture rtl of entity xil_defaultlib.display_controller [display_controller_default]
 Compiling architecture rtl of entity xil_defaultlib.display [display_default]
 Compiling architecture sim of entity xil_defaultlib.display_controller_tb

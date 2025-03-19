@@ -16,54 +16,46 @@ end display_controller;
 
 architecture rtl of display_controller is
 
-  -------------------------------------------------------------------------------
   -- Registro de desplazamiento para almacenar los últimos 4 caracteres (32 bits)
-  -------------------------------------------------------------------------------
   signal dato_rx_reg : std_logic_vector(31 downto 0);
 
-  -------------------------------------------------------------------------------
   -- Señal "tick" proveniente del prescaler
-  -------------------------------------------------------------------------------
   signal tick : std_logic;
+  -- Registro para ampliar el pulso tick a un ciclo de reloj
+  signal tick_reg : std_logic := '0';
 
-  -------------------------------------------------------------------------------
-  -- Constante para el prescaler (se pasa al módulo prescaler)
-  -------------------------------------------------------------------------------
-  constant CTE_ANDS : integer := 1000;  -- Ajusta este valor según el tiempo de activación deseado
+  -- Constante para el prescaler (por ejemplo, CTE_ANDS = 100 para que TaD = 100×10 ns = 1 µs)
+  constant CTE_ANDS : integer := 125000;  -- Para 1.25 ms
 
-  -------------------------------------------------------------------------------
   -- Contador de 3 bits para la multiplexación de 8 dígitos (D0..D7)
-  -------------------------------------------------------------------------------
   signal mux_sel : unsigned(2 downto 0) := (others => '0');
 
-  -------------------------------------------------------------------------------
   -- Señales internas para la salida de cada bloque
-  -------------------------------------------------------------------------------
   signal nibble_out : std_logic_vector(3 downto 0);
   signal seg_int    : std_logic_vector(6 downto 0);
   signal and_int    : std_logic_vector(7 downto 0);
   signal dp_int     : std_logic := '1';
 
-  -------------------------------------------------------------------------------
   -- Señales para extraer cada nibble del registro de 32 bits
-  -------------------------------------------------------------------------------
   signal I0, I1, I2, I3, I4, I5, I6, I7 : std_logic_vector(3 downto 0);
 
 begin
 
   ------------------------------------------------------------------------------
-  -- Registro de desplazamiento (almacena el nuevo dato en la parte baja y desplaza)
+  -- Registro de desplazamiento: se desplaza el dato cuando DATO_RX_OK es '1'
   ------------------------------------------------------------------------------
-  process (CLK, RST)
-  begin
-    if RST = '1' then
-      dato_rx_reg <= (others => '0');
-    elsif rising_edge(CLK) then
-      if DATO_RX_OK = '1' then
-        dato_rx_reg <= dato_rx_reg(23 downto 0) & DATO_RX;
+    process (CLK, RST)
+    begin
+      if RST = '1' then
+        dato_rx_reg <= (others => '0');
+      elsif rising_edge(CLK) then
+        if DATO_RX_OK = '1' then
+          -- Los 24 bits anteriores se desplazan a [31..8],
+          -- y el nuevo byte entra en [7..0]
+          dato_rx_reg <= dato_rx_reg(23 downto 0) & DATO_RX;
+        end if;
       end if;
-    end if;
-  end process;
+    end process;
 
   ------------------------------------------------------------------------------
   -- Instanciación del módulo prescaler
@@ -79,42 +71,63 @@ begin
     );
 
   ------------------------------------------------------------------------------
-  -- Actualización del contador de multiplexación utilizando la señal tick
+  -- Registrar tick para asegurarse de que dure un ciclo de reloj
   ------------------------------------------------------------------------------
   process (CLK, RST)
   begin
     if RST = '1' then
-      mux_sel <= (others => '0');
+      tick_reg <= '0';
     elsif rising_edge(CLK) then
-      if tick = '1' then
-        mux_sel <= mux_sel + 1;
-      end if;
+      tick_reg <= tick;
     end if;
   end process;
 
   ------------------------------------------------------------------------------
-  -- Multiplexor: Dividir los 32 bits en 8 nibbles (4 bits cada uno)
+  -- Actualización del contador de multiplexación usando tick_reg
   ------------------------------------------------------------------------------
-  I0 <= dato_rx_reg( 3 downto  0);
-  I1 <= dato_rx_reg( 7 downto  4);
-  I2 <= dato_rx_reg(11 downto  8);
-  I3 <= dato_rx_reg(15 downto 12);
-  I4 <= dato_rx_reg(19 downto 16);
-  I5 <= dato_rx_reg(23 downto 20);
-  I6 <= dato_rx_reg(27 downto 24);
-  I7 <= dato_rx_reg(31 downto 28);
+    process(CLK, RST)
+      variable prev_tick_var : std_logic := '0';
+      variable mux_sel_var   : unsigned(2 downto 0) := (others => '0');
+    begin
+      if RST = '1' then
+        prev_tick_var := '0';
+        mux_sel_var   := (others => '0');
+        -- Se reflejan las variables en las señales
+        mux_sel       <= (others => '0');
+      elsif rising_edge(CLK) then
+        -- Detectamos flanco ascendente de tick
+        if (prev_tick_var = '0' and tick = '1') then
+          mux_sel_var := mux_sel_var + 1;
+        end if;
+        prev_tick_var := tick;
+        -- Asignamos la variable a la señal
+        mux_sel <= mux_sel_var;
+      end if;
+    end process;
+    
+  ------------------------------------------------------------------------------
+  -- Multiplexor: extrae los 8 nibbles (cada 4 bits) del registro
+  ------------------------------------------------------------------------------
+    I0 <= dato_rx_reg( 3 downto  0);  -- nibble bajo  del 1er byte (el + reciente)
+    I1 <= dato_rx_reg( 7 downto  4);  -- nibble alto  del 1er byte
+    I2 <= dato_rx_reg(11 downto  8);  -- nibble bajo  del 2º byte
+    I3 <= dato_rx_reg(15 downto 12);  -- nibble alto  del 2º byte
+    I4 <= dato_rx_reg(19 downto 16);  -- nibble bajo  del 3er byte
+    I5 <= dato_rx_reg(23 downto 20);  -- nibble alto  del 3er byte
+    I6 <= dato_rx_reg(27 downto 24);  -- nibble bajo  del 4º byte
+    I7 <= dato_rx_reg(31 downto 28);  -- nibble alto  del 4º byte
+    
 
-  with mux_sel select
-    nibble_out <= I0 when "000",
-                  I1 when "001",
-                  I2 when "010",
-                  I3 when "011",
-                  I4 when "100",
-                  I5 when "101",
-                  I6 when "110",
-                  I7 when "111",
-                  I0 when others;
-
+    with mux_sel select
+      nibble_out <= I0 when "000",
+                    I1 when "001",
+                    I2 when "010",
+                    I3 when "011",
+                    I4 when "100",
+                    I5 when "101",
+                    I6 when "110",
+                    I7 when "111",
+                    I0 when others;
   ------------------------------------------------------------------------------
   -- Decodificador HEX -> 7 segmentos (gfedcba)
   ------------------------------------------------------------------------------
@@ -136,35 +149,25 @@ begin
       "0100001" when "1101",  -- d
       "0000110" when "1110",  -- E
       "0001110" when "1111",  -- F
-      "1111111" when others;  -- (apagado o '-')
+      "1111111" when others;
 
   ------------------------------------------------------------------------------
-  -- Decodificador 3 a 8 para activar los ánodos (AND_70) en bajo
-  -- Se modifica para que genere los patrones esperados por la entidad display:
-  --   mux_sel "000" -> "11111110"  (actualiza Displays(1))
-  --   mux_sel "001" -> "11111101"  (actualiza Displays(2))
-  --   mux_sel "010" -> "11111011"  (actualiza Displays(3))
-  --   mux_sel "011" -> "11110111"  (actualiza Displays(4))
-  --   mux_sel "100" -> "11101111"  (actualiza Displays(5))
-  --   mux_sel "101" -> "11011111"  (actualiza Displays(6))
-  --   mux_sel "110" -> "10111111"  (actualiza Displays(7))
-  --   mux_sel "111" -> "01111111"  (actualiza Displays(8))
+  -- Decodificador AND_70: genera la activación de ánodos
   ------------------------------------------------------------------------------
-  with mux_sel select
-    and_int <= 
-      "11111110" when "000",
-      "11111101" when "001",
-      "11111011" when "010",
-      "11110111" when "011",
-      "11101111" when "100",
-      "11011111" when "101",
-      "10111111" when "110",
-      "01111111" when "111",
-      "11111111" when others;
+    with mux_sel select
+      and_int <= 
+        "11111110" when "000",  -- D0 (más a la derecha)
+        "11111101" when "001",  -- D1
+        "11111011" when "010",  -- D2
+        "11110111" when "011",  -- D3
+        "11101111" when "100",  -- D4
+        "11011111" when "101",  -- D5
+        "10111111" when "110",  -- D6
+        "01111111" when "111",  -- D7 (más a la izquierda)
+        "11111111" when others;
 
   ------------------------------------------------------------------------------
-  -- Lógica para el punto decimal (DP)
-  -- Por ejemplo, encender DP (activo '0') en los dígitos D2, D4 y D6
+  -- Generación del DP (punto decimal): enciende DP para ciertos dígitos
   ------------------------------------------------------------------------------
   process(mux_sel)
   begin
